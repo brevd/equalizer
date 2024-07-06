@@ -28,6 +28,14 @@ func SetupRouter() *gin.Engine {
 		protected.POST("/bill-mates", controllers.CreateBillMate)
 
 		protected.GET("/bill-groups", controllers.GetBillGroups)
+
+		protected.GET("/categories", controllers.GetCategories)
+		protected.POST("/categories", controllers.CreateCategory)
+
+		protected.POST("/expenses", controllers.CreateExpense)
+		protected.GET("/expenses", controllers.GetExpenses)
+		protected.GET("/expenses/:id", controllers.GetExpenseByID)
+
 	}
 	return router
 }

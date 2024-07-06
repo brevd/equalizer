@@ -92,7 +92,7 @@ func createTables() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount INTEGER NOT NULL,
         description TEXT,
-        title TEXT,
+        title TEXT NOT NULL,
         date DATETIME DEFAULT CURRENT_TIMESTAMP,
         payment_method TEXT,
         vendor TEXT,
@@ -112,7 +112,7 @@ func createTables() {
         bill_mate_id INTEGER NOT NULL,
         expense_id INTEGER NOT NULL,
         FOREIGN KEY (bill_mate_id) REFERENCES bill_mates(id) ON DELETE CASCADE,
-        FOREIGN KEY (expense_id) REFERENCES expenses(id) ON DELETE SET NULL
+        FOREIGN KEY (expense_id) REFERENCES expenses(id) ON DELETE CASCADE
     );`
 
 	// Execute table creation queries

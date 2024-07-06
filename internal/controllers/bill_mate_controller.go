@@ -10,7 +10,7 @@ import (
 
 func GetBillMates(c *gin.Context) {
 
-	// Find all users
+	// Find all bill mates
 	rows, err := internal.DB.Query("SELECT id, user_id, name FROM bill_mates")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -70,5 +70,5 @@ func CreateBillMate(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "bill mate created successfully", "bill mate": billMateID})
+	c.JSON(http.StatusCreated, gin.H{"message": "bill mate created successfully", "bill mate id": billMateID})
 }
