@@ -1,0 +1,53 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Output of the 'go build' command
+/build/
+/bin/
+/vendor/
+
+# Go dependency management tool files
+go.sum
+go.mod
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.DS_Store
+*.class
+*.log
+
+# Database files
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+# Specific to Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+
+# JetBrains IDEs
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
