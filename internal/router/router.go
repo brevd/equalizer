@@ -36,6 +36,8 @@ func SetupRouter() *gin.Engine {
 		protected.GET("/expenses", controllers.GetExpenses)
 		protected.GET("/expenses/:id", controllers.GetExpenseByID)
 
+		protected.POST("/budgets", controllers.CreateBudget)
+		protected.GET("/budgets/:id", controllers.GetBudgetByUserID)
 	}
 	return router
 }

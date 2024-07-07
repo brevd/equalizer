@@ -12,7 +12,7 @@ import (
 
 func GetExpenses(c *gin.Context) {
 	// Find all expenses
-	rows, err := internal.DB.Query("SELECT title, amount, description, date, payment_method, vendor, user_id, bill_group_id, category_id FROM expenses")
+	rows, err := internal.DB.Query("SELECT id, title, amount, description, date, payment_method, vendor, user_id, bill_group_id, category_id FROM expenses")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -24,7 +24,7 @@ func GetExpenses(c *gin.Context) {
 	for rows.Next() {
 		var expense models.Expense
 		var date string
-		if err := rows.Scan(&expense.Title, &expense.Amount, &expense.Description, &date, &expense.PaymentMethod, &expense.Vendor, &expense.UserID, &expense.BillGroupID, &expense.CategoryID); err != nil {
+		if err := rows.Scan(&expense.ID, &expense.Title, &expense.Amount, &expense.Description, &date, &expense.PaymentMethod, &expense.Vendor, &expense.UserID, &expense.BillGroupID, &expense.CategoryID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
