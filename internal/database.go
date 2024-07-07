@@ -39,6 +39,7 @@ func createTables() {
         payment_methods TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
         info TEXT,
+        password TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );`
@@ -84,7 +85,8 @@ func createTables() {
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE (user_id, category_id)
     );`
 
 	createExpenseTable := `
@@ -115,6 +117,14 @@ func createTables() {
         FOREIGN KEY (expense_id) REFERENCES expenses(id) ON DELETE CASCADE
     );`
 
+	createBlacklistTable := `
+    CREATE TABLE IF NOT EXISTS blacklist (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        token TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_token_created_at ON blacklist(token, created_at);`
+
 	// Execute table creation queries
 	execQuery(createUserTable)
 	execQuery(createBillMateTable)
@@ -124,6 +134,7 @@ func createTables() {
 	execQuery(createBudgetTable)
 	execQuery(createExpenseTable)
 	execQuery(createSplitTable)
+	execQuery(createBlacklistTable)
 }
 
 func execQuery(query string) {

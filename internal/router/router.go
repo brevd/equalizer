@@ -12,13 +12,16 @@ func SetupRouter() *gin.Engine {
 	public := router.Group("/")
 	{
 		public.GET("/", controllers.Index)
+		public.POST("/register", controllers.Register)
+		public.POST("/login", controllers.Login)
 	}
 	// Protected routes
 	protected := router.Group("/api")
 	protected.Use(middleware.AuthMiddleware())
 	{
+		protected.POST("/logout", controllers.Logout)
+
 		protected.GET("/users", controllers.GetUsers)
-		protected.POST("/users", controllers.CreateUser)
 		protected.GET("/users/:id", controllers.GetUserByID)
 		protected.PUT("/users/:id", controllers.UpdateUser)
 		protected.DELETE("/users/:id", controllers.DeleteUser)
@@ -37,7 +40,7 @@ func SetupRouter() *gin.Engine {
 		protected.GET("/expenses/:id", controllers.GetExpenseByID)
 
 		protected.POST("/budgets", controllers.CreateBudget)
-		protected.GET("/budgets/:id", controllers.GetBudgetByUserID)
+		protected.GET("/budgets/", controllers.GetBudgets)
 	}
 	return router
 }

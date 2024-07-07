@@ -9,13 +9,19 @@ import (
 )
 
 func CreateBudget(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user_id from context"})
+		return
+	}
+
 	var budget models.Budget
 	if err := c.ShouldBindJSON(&budget); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	result, err := internal.DB.Exec("INSERT INTO budgets (amount, time_period, category_id, user_id) VALUES (?,?,?,?)", budget.Amount, budget.TimePeriod, budget.CategoryID, budget.UserID)
+	result, err := internal.DB.Exec("INSERT INTO budgets (amount, time_period, category_id, user_id) VALUES (?,?,?,?)", budget.Amount, budget.TimePeriod, budget.CategoryID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -30,10 +36,14 @@ func CreateBudget(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Budget created successfully", "budget id": budgetID})
 }
 
-func GetBudgetByUserID(c *gin.Context) {
-	id := c.Param("id")
+func GetBudgets(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user_id from context"})
+		return
+	}
 
-	rows, err := internal.DB.Query("SELECT id, category_id, time_period, user_id, amount, created_at, updated_at FROM budgets WHERE user_id = (?)", id)
+	rows, err := internal.DB.Query("SELECT id, category_id, time_period, user_id, amount, created_at, updated_at FROM budgets WHERE user_id = (?)", userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

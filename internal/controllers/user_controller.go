@@ -3,80 +3,41 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/brevd/equalizer/internal"
+	"github.com/brevd/equalizer/internal/auth"
 	"github.com/brevd/equalizer/internal/models"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
-func GetUsers(c *gin.Context) {
-
-	// Find all users
-	rows, err := internal.DB.Query("SELECT id, name, payment_methods, email, info, created_at, updated_at FROM users")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	defer rows.Close()
-
-	var users []models.User
-	for rows.Next() {
-		var user models.User
-		var createdAt, updatedAt, paymentMethodsJSON string
-		if err := rows.Scan(&user.ID, &user.Name, &paymentMethodsJSON, &user.Email, &user.Info, &createdAt, &updatedAt); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		// Parse the Payment Methods string to JSON
-		err = json.Unmarshal([]byte(paymentMethodsJSON), &user.PaymentMethods)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse payment methods"})
-			return
-		}
-
-		// Parse the time strings into time.Time
-		user.CreatedAt, err = time.Parse(time.RFC3339, createdAt)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse created_at"})
-			return
-		}
-		user.UpdatedAt, err = time.Parse(time.RFC3339, updatedAt)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse updated_at"})
-			return
-		}
-
-		users = append(users, user)
-	}
-
-	if users == nil {
-		users = []models.User{}
-	}
-
-	// Return the list of users
-	c.JSON(http.StatusOK, users)
-}
-
-func CreateUser(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+func Register(c *gin.Context) {
+	var login models.Login
+	if err := c.ShouldBindJSON(&login); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	var user models.User
 	// Ensure payment methods is not null
-	if user.PaymentMethods == nil {
-		user.PaymentMethods = []string{"General"}
-	}
+	user.PaymentMethods = []string{"General"}
+	user.Email = login.Email
 
 	paymentMethodsJSON, err := json.Marshal(user.PaymentMethods)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(login.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+
+	user.Password = string(hashedPassword)
 
 	tx, err := internal.DB.Begin()
 	if err != nil {
@@ -91,8 +52,8 @@ func CreateUser(c *gin.Context) {
 		}
 	}()
 
-	result, err := tx.Exec("INSERT INTO users (name, payment_methods, email, info) VALUES (?, ?, ?, ?)",
-		user.Name, paymentMethodsJSON, user.Email, user.Info)
+	result, err := tx.Exec("INSERT INTO users (name, payment_methods, email, password, info) VALUES (?, ?, ?, ?, ?)",
+		user.Name, paymentMethodsJSON, user.Email, user.Password, user.Info)
 	if err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -151,6 +112,102 @@ func CreateUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "user created successfully", "user": userID})
+}
+
+func Login(c *gin.Context) {
+	var login models.Login
+	if err := c.ShouldBindJSON(&login); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	row := internal.DB.QueryRow("SELECT id, email, password FROM users WHERE email = (?)", login.Email)
+
+	var user models.User
+	if err := row.Scan(&user.ID, &user.Email, &user.Password); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error1": err.Error()})
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(login.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error2": err.Error()})
+		return
+	}
+
+	token, err := auth.GenerateJWT(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+func Logout(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
+		return
+	}
+
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	err := auth.AddToBlacklist(tokenString)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add token to blacklist"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
+}
+
+func GetUsers(c *gin.Context) {
+
+	// Find all users
+	rows, err := internal.DB.Query("SELECT id, name, payment_methods, email, info, created_at, updated_at FROM users")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer rows.Close()
+
+	var users []models.User
+	for rows.Next() {
+		var user models.User
+		var createdAt, updatedAt, paymentMethodsJSON string
+		if err := rows.Scan(&user.ID, &user.Name, &paymentMethodsJSON, &user.Email, &user.Info, &createdAt, &updatedAt); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Parse the Payment Methods string to JSON
+		err = json.Unmarshal([]byte(paymentMethodsJSON), &user.PaymentMethods)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse payment methods"})
+			return
+		}
+
+		// Parse the time strings into time.Time
+		user.CreatedAt, err = time.Parse(time.RFC3339, createdAt)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse created_at"})
+			return
+		}
+		user.UpdatedAt, err = time.Parse(time.RFC3339, updatedAt)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse updated_at"})
+			return
+		}
+
+		users = append(users, user)
+	}
+
+	if users == nil {
+		users = []models.User{}
+	}
+
+	// Return the list of users
+	c.JSON(http.StatusOK, users)
 }
 
 func GetUserByID(c *gin.Context) {
