@@ -14,8 +14,8 @@ import (
 )
 
 func Register(c *gin.Context) {
-	var login models.Login
-	if err := c.ShouldBindJSON(&login); err != nil {
+	var login auth.Login
+	if err := c.ShouldBind(&login); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -114,10 +114,16 @@ func Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "user created successfully", "user": userID})
 }
 
+func ShowRegister(c *gin.Context) {
+	c.HTML(http.StatusOK, "register.html", gin.H{
+		"title": "Register",
+	})
+}
+
 func Login(c *gin.Context) {
-	var login models.Login
-	if err := c.ShouldBindJSON(&login); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var login auth.Login
+	if err := c.ShouldBind(&login); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error32": err.Error()})
 		return
 	}
 
@@ -140,7 +146,24 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(
+		"auth_jwteq", // name
+		token,        // value
+		3600,         // maxAge (1 hour in seconds)
+		"/",          // path
+		"localhost",  // domain
+		false,        // secure
+		true,         // httpOnly
+	)
+
 	c.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+func ShowLogin(c *gin.Context) {
+	c.HTML(http.StatusOK, "login.html", gin.H{
+		"title": "Login",
+	})
 }
 
 func Logout(c *gin.Context) {

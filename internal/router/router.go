@@ -8,11 +8,20 @@ import (
 
 func SetupRouter() *gin.Engine {
 	router := gin.Default()
+
+	// Serve static files
+	router.Static("/static", "../../static")
+
+	// Load HTML templates
+	router.LoadHTMLGlob("../templates/*")
+
 	// Public routes
 	public := router.Group("/")
 	{
 		public.GET("/", controllers.Index)
+		public.GET("/register", controllers.ShowRegister)
 		public.POST("/register", controllers.Register)
+		public.GET("/login", controllers.ShowLogin)
 		public.POST("/login", controllers.Login)
 	}
 	// Protected routes

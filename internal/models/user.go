@@ -16,14 +16,3 @@ type User struct {
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
-
-type Login struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
-type BlackListToken struct {
-	ID        int       `json:"id"`
-	Token     string    `json:"token"`
-	CreatedAt time.Time `json:"created_at"`
-}

@@ -7,5 +7,7 @@ import (
 )
 
 func Index(c *gin.Context) {
-	c.String(http.StatusOK, "welcome to my API")
+	c.HTML(http.StatusOK, "index.html", gin.H{
+		"title": "Home Page",
+	})
 }

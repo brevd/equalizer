@@ -6,6 +6,12 @@ import (
 	"github.com/brevd/equalizer/internal"
 )
 
+type BlackListToken struct {
+	ID        int       `json:"id"`
+	Token     string    `json:"token"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 func AddToBlacklist(token string) error {
 	_, err := internal.DB.Exec("INSERT INTO blacklist (token) VALUES (?)", token)
 	return err

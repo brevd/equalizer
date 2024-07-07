@@ -6,7 +6,12 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-const TokenExpirationHours = 24
+type Login struct {
+	Email    string `json:"email" form:"email" binding:"required"`
+	Password string `json:"password" form:"password" binding:"required"`
+}
+
+const TokenExpirationHours = 1
 
 var jwtSecret = []byte("your_secret_key")
 
